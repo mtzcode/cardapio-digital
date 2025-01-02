@@ -2,74 +2,58 @@ import connectToDatabase from "../../utils/db";
 import Order from "../../models/Order";
 
 export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const { deliveryType, name, phone, address, cart, paymentMethod, change } =
-      req.body;
-
+  if (req.method === "GET") {
     try {
       // Conecta ao banco de dados
       await connectToDatabase();
 
-      // Salva o pedido no banco de dados
-      const newOrder = await Order.create({
-        deliveryType,
-        name,
-        phone,
-        address,
-        cart,
-        paymentMethod,
-        change,
-      });
+      // Obtém todos os pedidos do banco de dados
+      const orders = await Order.find();
 
-      // Cria a mensagem do pedido
-      const orderMessage = `
-Novo Pedido:
-Nome: ${name}
-Telefone: ${phone}
-Tipo de Entrega: ${deliveryType === "entrega" ? "Entrega" : "Retirada"}
-${deliveryType === "entrega" ? `Endereço: ${address}` : ""}
-Pagamento: ${paymentMethod}${
-        paymentMethod === "Dinheiro" && change
-          ? ` (Troco para R$ ${parseFloat(change).toFixed(2)})`
-          : ""
+      // Verifica se há pedidos
+      if (!orders || orders.length === 0) {
+        return res.status(404).json({ message: "Nenhum pedido encontrado." });
       }
 
-Itens:
-${cart
-  .map(
-    (item) =>
-      `- ${item.name} (R$${item.price.toFixed(2)}) x${item.quantity} ${
-        item.extras.length > 0
-          ? `\n   Acréscimos: ${item.extras
-              .map((extra) => `${extra.name} (R$${extra.price.toFixed(2)})`)
-              .join(", ")}`
-          : ""
-      }`
-  )
-  .join("\n")}
+      // Monta o conteúdo do arquivo CSV
+      const csvHeader = "Nome,Telefone,Endereço,Forma de Pagamento,Total\n";
+      const csvBody = orders
+        .map((order) => {
+          const total = order.cart.reduce(
+            (sum, item) =>
+              sum +
+              (item.prato.price +
+                item.extras.reduce(
+                  (extraSum, extra) => extraSum + extra.price,
+                  0
+                )) *
+                item.quantity,
+            0
+          );
 
-Total: R$${cart.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
-`;
+          return `"${order.name}","${order.phone}","${order.address}","${
+            order.paymentMethod
+          }","R$ ${total.toFixed(2)}"`;
+        })
+        .join("\n");
 
-      // Gera o link do WhatsApp
-      const whatsappNumber = "5516997636045"; // Substitua pelo número do restaurante
-      const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        orderMessage
-      )}`;
+      const csvContent = csvHeader + csvBody;
 
-      // Retorna a mensagem de sucesso e o link do WhatsApp
-      res
-        .status(200)
-        .json({ message: "Pedido salvo com sucesso!", whatsappLink });
+      // Configura o cabeçalho da resposta para download do arquivo
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="pedidos.csv"'
+      );
+
+      res.status(200).send(csvContent);
     } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ error: "Erro ao salvar o pedido no banco de dados" });
+      console.error("Erro ao exportar pedidos:", error);
+      res.status(500).json({ error: "Erro ao exportar pedidos." });
     }
   } else {
-    // Define o método permitido
-    res.setHeader("Allow", ["POST"]);
-    res.status(405).end(`Método ${req.method} não permitido`);
+    // Método não permitido
+    res.setHeader("Allow", ["GET"]);
+    res.status(405).end(`Método ${req.method} não permitido.`);
   }
 }

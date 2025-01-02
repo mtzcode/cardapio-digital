@@ -8,10 +8,10 @@ export default async function handler(req, res) {
 
     try {
       // Conecta ao banco de dados
-      const db = await connectToDatabase();
+      await connectToDatabase(); // Conexão realizada, sem necessidade de atribuição a `db`
 
       // Salva o pedido no banco de dados
-      const newOrder = await Order.create({
+      await Order.create({
         deliveryType,
         name,
         phone,
