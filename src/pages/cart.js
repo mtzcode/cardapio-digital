@@ -10,8 +10,12 @@ export default function Cart() {
     const fetchCart = async () => {
       try {
         const response = await fetch("/api/cart");
-        const data = await response.json();
-        setCart(data.items || []);
+        if (response.ok) {
+          const data = await response.json();
+          setCart(data.items || []);
+        } else {
+          console.error("Erro ao carregar o carrinho: ", response.statusText);
+        }
       } catch (error) {
         console.error("Erro ao carregar o carrinho:", error);
       } finally {
@@ -47,11 +51,11 @@ export default function Cart() {
   };
 
   const handleProceedToDelivery = () => {
-    router.push("/delivery"); // Direciona corretamente para a página de Delivery
+    router.push("/delivery");
   };
 
   const calculateItemTotal = (item) => {
-    const extrasTotal = item.extras.reduce(
+    const extrasTotal = (item.extras || []).reduce(
       (sum, extra) => sum + extra.price,
       0
     );
@@ -68,7 +72,6 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      {/* Link para voltar ao menu */}
       <button
         onClick={() => router.push("/menu")}
         className="text-blue-500 underline mb-6"
@@ -105,7 +108,6 @@ export default function Cart() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                {/* Links para editar e remover */}
                 <span
                   onClick={() => handleEditItem(item)}
                   className="text-blue-500 underline cursor-pointer"
@@ -122,13 +124,11 @@ export default function Cart() {
             </div>
           ))}
 
-          {/* Exibição do valor total */}
           <div className="text-lg font-bold text-gray-800 flex justify-between mt-4 border-t pt-4">
             <span>Total do Pedido:</span>
             <span>R$ {calculateCartTotal().toFixed(2)}</span>
           </div>
 
-          {/* Botão para Finalizar Pedido */}
           <button
             onClick={handleProceedToDelivery}
             className="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition mt-6"

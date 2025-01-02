@@ -21,8 +21,8 @@ async function connectToDatabase() {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      useNewUrlParser: true, // Compatibilidade com parsing de URLs antigas
+      useUnifiedTopology: true, // Garante uso da topologia moderna do driver
     });
   }
 

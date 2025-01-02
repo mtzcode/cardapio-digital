@@ -1,5 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import connectToDatabase from "../../../utils/db";
+import User from "../../../models/User";
 
 export const authOptions = {
   providers: [
@@ -14,30 +16,21 @@ export const authOptions = {
         password: { label: "Senha", type: "password" },
       },
       async authorize(credentials) {
-        // Simula um usuário do banco de dados
-        const user = {
-          id: 1,
-          name: "Administrador",
-          email: "admin@example.com",
-        };
+        await connectToDatabase(); // Conecta ao banco
+        const user = await User.findOne({ email: credentials.email });
 
-        // Verifica se as credenciais estão corretas
-        if (
-          credentials.email === "admin@example.com" &&
-          credentials.password === "password123"
-        ) {
-          return user; // Retorna o usuário autenticado
+        if (!user || user.password !== credentials.password) {
+          console.error("Credenciais inválidas.");
+          return null; // Retorna null para credenciais inválidas
         }
 
-        // Retorna null se as credenciais forem inválidas
-        console.error("Credenciais inválidas.");
-        return null;
+        return { id: user._id, name: user.name, email: user.email }; // Retorna o usuário autenticado
       },
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/auth/signin", // Página de login personalizada
   },
   callbacks: {
     async jwt({ token, user }) {

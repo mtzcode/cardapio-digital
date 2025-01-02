@@ -15,6 +15,7 @@ export default function Admin() {
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
+    if (!session) return; // Evita buscar dados antes da autenticação
     async function fetchOrders() {
       setLoading(true);
       try {
@@ -42,7 +43,7 @@ export default function Admin() {
     }
 
     fetchOrders();
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, session]);
 
   const updateStatus = async (id, newStatus) => {
     try {
@@ -99,13 +100,16 @@ export default function Admin() {
   if (status === "loading") return <p>Carregando...</p>;
   if (!session) {
     return (
-      <div>
-        <p>
-          Você precisa estar autenticado para acessar esta página.{" "}
-          <button onClick={() => signIn()} className="text-blue-500 underline">
-            Entrar
-          </button>
+      <div className="min-h-screen flex flex-col justify-center items-center">
+        <p className="mb-4 text-lg">
+          Você precisa estar autenticado para acessar esta página.
         </p>
+        <button
+          onClick={() => signIn()}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Entrar
+        </button>
       </div>
     );
   }
@@ -150,56 +154,62 @@ export default function Admin() {
         </button>
       </div>
 
-      <table className="w-full border-collapse border">
-        <thead>
-          <tr>
-            <th className="border p-2">Nome</th>
-            <th className="border p-2">Telefone</th>
-            <th className="border p-2">Endereço</th>
-            <th className="border p-2">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order._id}>
-              <td className="border p-2">{order.name}</td>
-              <td className="border p-2">{order.phone}</td>
-              <td className="border p-2">{order.address}</td>
-              <td className="border p-2">
-                <select
-                  value={order.status || "Pendente"}
-                  onChange={(e) => updateStatus(order._id, e.target.value)}
-                  className="border p-2 rounded"
-                >
-                  <option value="Pendente">Pendente</option>
-                  <option value="Em preparação">Em preparação</option>
-                  <option value="Concluído">Concluído</option>
-                </select>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {loading ? (
+        <p>Carregando pedidos...</p>
+      ) : (
+        <>
+          <table className="w-full border-collapse border">
+            <thead>
+              <tr>
+                <th className="border p-2">Nome</th>
+                <th className="border p-2">Telefone</th>
+                <th className="border p-2">Endereço</th>
+                <th className="border p-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order._id}>
+                  <td className="border p-2">{order.name}</td>
+                  <td className="border p-2">{order.phone}</td>
+                  <td className="border p-2">{order.address}</td>
+                  <td className="border p-2">
+                    <select
+                      value={order.status || "Pendente"}
+                      onChange={(e) => updateStatus(order._id, e.target.value)}
+                      className="border p-2 rounded"
+                    >
+                      <option value="Pendente">Pendente</option>
+                      <option value="Em preparação">Em preparação</option>
+                      <option value="Concluído">Concluído</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-      <div className="mt-4 flex justify-between">
-        <button
-          disabled={page <= 1}
-          onClick={() => setPage(page - 1)}
-          className="p-2 bg-blue-500 text-white rounded disabled:opacity-50"
-        >
-          Anterior
-        </button>
-        <p>
-          Página {page} de {totalPages}
-        </p>
-        <button
-          disabled={page >= totalPages}
-          onClick={() => setPage(page + 1)}
-          className="p-2 bg-blue-500 text-white rounded disabled:opacity-50"
-        >
-          Próxima
-        </button>
-      </div>
+          <div className="mt-4 flex justify-between">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+              className="p-2 bg-blue-500 text-white rounded disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <p>
+              Página {page} de {totalPages}
+            </p>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+              className="p-2 bg-blue-500 text-white rounded disabled:opacity-50"
+            >
+              Próxima
+            </button>
+          </div>
+        </>
+      )}
     </main>
   );
 }

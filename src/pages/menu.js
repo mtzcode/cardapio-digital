@@ -81,7 +81,12 @@ export default function Menu() {
       try {
         const response = await fetch("/api/cart");
         const data = await response.json();
-        setCartCount(data.items.reduce((sum, item) => sum + item.quantity, 0)); // Soma as quantidades
+        setCartCount(
+          (data.items || []).reduce(
+            (sum, item) => sum + (item.quantity || 0),
+            0
+          )
+        ); // Soma as quantidades
       } catch (error) {
         console.error("Erro ao carregar o carrinho:", error);
       }
