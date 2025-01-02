@@ -1,26 +1,28 @@
-import connectToDatabase from "../../utils/db"; // Caminho ajustado
-import User from "../../models/User"; // Caminho ajustado
+import connectToDatabase from "../../utils/db";
+import User from "../../models/User";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Método não permitido" });
   }
 
-  const { email, password } = req.body;
+  const { name, email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Todos os campos são obrigatórios" });
+  if (!name || !email || !password) {
+    return res
+      .status(400)
+      .json({ error: "Nome, email e senha são obrigatórios" });
   }
 
   try {
-    await connectToDatabase(); // Conexão ao banco de dados
+    await connectToDatabase();
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       return res.status(409).json({ error: "Usuário já registrado" });
     }
 
-    const newUser = new User({ email, password });
+    const newUser = new User({ name, email, password });
     await newUser.save();
 
     res.status(201).json({ message: "Usuário registrado com sucesso" });
