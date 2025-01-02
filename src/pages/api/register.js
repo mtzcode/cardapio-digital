@@ -1,34 +1,33 @@
-import connectToDatabase from "../../utils/db";
-import User from "../../models/User";
+import connectToDatabase from "../../../utils/db";
+import User from "../../../models/User";
 
 export default async function handler(req, res) {
-  if (req.method === "POST") {
-    const { email, password, name } = req.body;
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Método não permitido" });
+  }
 
-    try {
-      await connectToDatabase();
+  const { email, password, name } = req.body;
 
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ error: "Usuário já existe!" });
-      }
+  if (!email || !password || !name) {
+    return res
+      .status(400)
+      .json({ message: "Todos os campos são obrigatórios" });
+  }
 
-      const newUser = new User({
-        email,
-        password, // Lembre-se de hash a senha em produção
-        name,
-      });
+  try {
+    await connectToDatabase();
+    const existingUser = await User.findOne({ email });
 
-      await newUser.save();
-      return res
-        .status(201)
-        .json({ message: "Usuário cadastrado com sucesso!" });
-    } catch (error) {
-      console.error("Erro ao cadastrar usuário:", error);
-      return res.status(500).json({ error: "Erro no servidor!" });
+    if (existingUser) {
+      return res.status(400).json({ message: "Usuário já cadastrado" });
     }
-  } else {
-    res.setHeader("Allow", ["POST"]);
-    res.status(405).end(`Método ${req.method} não permitido`);
+
+    const newUser = new User({ email, password, name });
+    await newUser.save();
+
+    res.status(201).json({ message: "Usuário registrado com sucesso!" });
+  } catch (error) {
+    console.error("Erro ao registrar usuário:", error);
+    res.status(500).json({ message: "Erro no servidor. Tente novamente." });
   }
 }
