@@ -13,6 +13,5 @@ const OrderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-// Define explicitamente o nome da coleção como 'pedidos'
-export default mongoose.models.Pedido ||
-  mongoose.model("Pedido", OrderSchema, "pedidos");
+export default mongoose.models.Order ||
+  mongoose.model("Order", OrderSchema, "pedidos");

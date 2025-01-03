@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src", // Base para resolver caminhos
+    "paths": {
+      "models/*": ["models/*"], // Atalho para "src/models"
+      "utils/*": ["utils/*"] // Atalho para "src/utils"
+    }
+  }
+}
