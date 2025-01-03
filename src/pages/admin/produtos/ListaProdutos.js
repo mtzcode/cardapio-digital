@@ -1,21 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ListaProdutos({ onEditProduct }) {
-  const [produtos, setProdutos] = useState([
-    { id: 1, name: "Bruschetta", category: "Entradas", price: 12.99 },
-    {
-      id: 2,
-      name: "Risoto de Camarão",
-      category: "Pratos Principais",
-      price: 49.99,
-    },
-    // Outros produtos...
-  ]);
-
+  const [produtos, setProdutos] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  // Fetch produtos from API
+  useEffect(() => {
+    const fetchProdutos = async () => {
+      try {
+        const response = await fetch("/api/produtos");
+        const data = await response.json();
+        setProdutos(data);
+      } catch (error) {
+        console.error("Erro ao buscar produtos:", error);
+      }
+    };
+    fetchProdutos();
+  }, []);
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
@@ -40,10 +44,15 @@ export default function ListaProdutos({ onEditProduct }) {
 
   const totalPages = Math.ceil(filteredProdutos.length / itemsPerPage);
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (confirm("Tem certeza que deseja excluir este produto?")) {
-      setProdutos(produtos.filter((produto) => produto.id !== id));
-      alert("Produto excluído com sucesso!");
+      try {
+        await fetch(`/api/produtos?id=${id}`, { method: "DELETE" });
+        setProdutos(produtos.filter((produto) => produto._id !== id));
+        alert("Produto excluído com sucesso!");
+      } catch (error) {
+        console.error("Erro ao excluir produto:", error);
+      }
     }
   };
 
@@ -114,7 +123,7 @@ export default function ListaProdutos({ onEditProduct }) {
           </thead>
           <tbody>
             {paginatedProdutos.map((produto) => (
-              <tr key={produto.id} className="hover:bg-gray-50">
+              <tr key={produto._id} className="hover:bg-gray-50">
                 <td className="border px-4 py-2 text-sm sm:text-base font-bold">
                   {produto.name}
                 </td>
@@ -138,13 +147,13 @@ export default function ListaProdutos({ onEditProduct }) {
                     Editar
                   </span>
                   <button
-                    onClick={() => handleDelete(produto.id)}
+                    onClick={() => handleDelete(produto._id)}
                     className="hidden sm:inline-block bg-red-500 text-white px-3 py-1 text-sm rounded hover:bg-red-600"
                   >
                     Excluir
                   </button>
                   <span
-                    onClick={() => handleDelete(produto.id)}
+                    onClick={() => handleDelete(produto._id)}
                     className="sm:hidden text-red-500 cursor-pointer text-sm underline"
                   >
                     Excluir

@@ -1,13 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ProdutoForm({ onSave, product = {} }) {
-  const [image, setImage] = useState(product.image || null);
+  const [categories, setCategories] = useState([]);
+  const [category, setCategory] = useState(product.category || "");
+  const [image, setImage] = useState(product.image || "default-image.jpg");
+  const [imagePreview, setImagePreview] = useState(product.image || null);
   const [name, setName] = useState(product.name || "");
   const [description, setDescription] = useState(product.description || "");
   const [price, setPrice] = useState(product.price || "");
   const [measure, setMeasure] = useState(product.measure || "g");
-  const [quantity, setQuantity] = useState(product.quantity || "500");
+  const [quantity, setQuantity] = useState(product.quantity || "");
   const [extras, setExtras] = useState(product.extras || []);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("/api/categorias");
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error("Erro ao buscar categorias:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleAddExtra = () => {
     setExtras([...extras, { name: "", price: "" }]);
@@ -23,38 +48,77 @@ export default function ProdutoForm({ onSave, product = {} }) {
     setExtras(updatedExtras);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    let imageUrl = image;
+    if (image instanceof File) {
+      const formData = new FormData();
+      formData.append("file", image);
+      try {
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await response.json();
+        imageUrl = data.url || "default-image.jpg";
+      } catch (error) {
+        console.error("Erro ao fazer upload da imagem:", error);
+      }
+    }
+
     const productData = {
-      image,
+      _id: product._id, // Use o ID do produto se estiver editando
+      image: imageUrl,
       name,
+      category,
       description,
-      price,
-      quantity,
+      price: parseFloat(price),
+      quantity: parseInt(quantity),
       measure,
       extras,
     };
-    onSave(productData);
+
+    try {
+      const method = product._id ? "PUT" : "POST";
+      const response = await fetch("/api/produtos", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productData),
+      });
+
+      if (response.ok) {
+        alert("Produto salvo com sucesso!");
+        onSave(productData); // Chama a função passada pelo componente pai
+      } else {
+        alert("Erro ao salvar o produto.");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar produto:", error);
+      alert("Erro ao salvar o produto. Tente novamente.");
+    }
   };
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
       <h2 className="text-xl font-bold mb-4">
-        {product.id ? "Editar Produto" : "Cadastrar Novo Produto"}
+        {product._id ? "Editar Produto" : "Cadastrar Novo Produto"}
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block font-bold mb-1">Imagem do Produto</label>
           <input
             type="file"
-            accept="image/jpeg"
-            onChange={(e) => setImage(e.target.files[0])}
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleImageChange}
             className="w-full border rounded p-2"
           />
-          {image && (
-            <p className="text-gray-500 mt-1">
-              {typeof image === "string" ? image : image.name}
-            </p>
+          {imagePreview && (
+            <img
+              src={imagePreview}
+              alt="Previsualização"
+              className="w-32 h-32 mt-2 object-cover"
+            />
           )}
         </div>
         <div>
@@ -66,6 +130,22 @@ export default function ProdutoForm({ onSave, product = {} }) {
             required
             className="w-full border rounded p-2"
           />
+        </div>
+        <div>
+          <label className="block font-bold mb-1">Categoria</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+            className="w-full border rounded p-2"
+          >
+            <option value="">Selecione uma categoria</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block font-bold mb-1">Descrição</label>
@@ -94,6 +174,7 @@ export default function ProdutoForm({ onSave, product = {} }) {
             <input
               type="number"
               value={quantity}
+              placeholder="Ex: 500"
               onChange={(e) => setQuantity(e.target.value)}
               required
               className="w-full border rounded p-2"
