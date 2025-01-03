@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.full-height {
+  height: 100vh; /* 100% da altura da viewport */
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* Prevenir scroll horizontal */
+}
+
+div[class*="md:ml-64"] {
+  margin-left: 0; /* Previne espaços em telas maiores */
+}
+
+div[class*="flex-1"] {
+  border-left: none; /* Remove qualquer linha entre o conteúdo e a barra lateral */
+}
